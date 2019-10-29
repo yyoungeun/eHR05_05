@@ -1,0 +1,27 @@
+#board.jsp
+message.board.board_title=게시판
+message.board.board_title_list=게시판_목록
+message.board.Post_Management=게시관리
+message.board.board_id=게시글_순번
+message.board.title=제목
+message.board.read_cnt=조회수
+message.board.contents=내용
+message.board.reg_id=등록자ID
+message.board.reg_dt=등록일
+
+#button/common
+message.com.language.en=영어
+message.com.language.ko=한글
+message.com.num=번호
+message.com.search=검색어
+message.com.retrieve=조회
+message.com.exceldown=엑셀다운
+message.com.list=목록
+message.com.reset=초기화
+message.com.enrollment=등록
+message.com.modify=수정
+message.com.delete=삭제
+
+#message
+message.msg.no_data=등록된 게시물이 없습니다.
+message.msg.excel.down=엑셀저장 하시겠습니까?

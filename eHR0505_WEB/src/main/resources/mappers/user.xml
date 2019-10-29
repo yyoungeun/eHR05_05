@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ehr.user">
+	<sql id="userColumns">
+		u_id,
+		name,
+		passwd,
+		DECODE(h_level,1,'BASIC'
+		,2,'SILVER'
+		,3,'GOLD','NOLEVEL') as hLevel,
+		login,
+		recommend,
+		email,
+		TO_CHAR(reg_dt, 'yyyy/mm/dd HH24:MI:SS') as regDt
+	</sql>
+	
+	<sql id="baseCondition">
+			<choose>
+				<when test="'10' == searchDiv">
+					and u_id LIKE '%' || #{searchWord} || '%'
+				</when>
+				<when test="'20' == searchDiv">
+					and name LIKE '%' || #{searchWord} || '%'
+				</when>
+				<when test="'30' == searchDiv">
+					and email LIKE '%' || #{searchWord} || '%'
+				</when>
+				<otherwise></otherwise>							
+			</choose>
+	</sql>
+	
+	<!-- 아이디 체크 -->
+	<select id="id_check" parameterType="User" resultType="int">
+		SELECT COUNT(*) CNT
+		FROM USERS
+		WHERE U_ID = #{u_id,jdbcType=VARCHAR}	
+	</select>
+	
+	<!-- 비번 체크 -->
+	<select id="passwd_check" parameterType="User" resultType="int">
+		SELECT COUNT(*) CNT
+		FROM USERS
+		WHERE U_ID = #{u_id,jdbcType=VARCHAR}	
+		AND PASSWD = #{passwd,jdbcType=VARCHAR}	
+	</select>
+	
+		
+	<!-- 사용자 전체 조회 -->
+	<select id="get_all"  resultType="User">
+		 SELECT										
+		     <include refid="userColumns" />			
+		 FROM                                       
+		     users                                  
+		 ORDER BY reg_dt,u_id
+	</select>
+	
+	<!-- 목록조회 -->
+	<select id="get_retrieve" parameterType="Search" resultType="User">
+	  SELECT T1.*,T2.*													
+	  FROM                                                              
+	  (                                                                 
+	  	SELECT                                                         
+	  		B.u_id,                                                    
+	  		B.name,                                                    
+	  		B.passwd,                                                  
+	  		DECODE(B.h_level,1,'BASIC'
+						    ,2,'SILVER'
+						    ,3,'GOLD','NOLEVEL') as hLevel,                                             
+	  		B.login,                                                   
+	  		B.recommend,                                               
+	  		B.email,                                                   
+	  		CASE TO_CHAR(B.reg_dt, 'yyyy/mm/dd') when TO_CHAR(sysdate, 'yyyy/mm/dd') THEN TO_CHAR(sysdate, 'HH24:MI')
+	  		ELSE TO_CHAR(B.reg_dt, 'yyyy/mm/dd') END AS regDt,
+	  		B.rnum  as num                       
+	  	FROM                                                           
+	  	( 	SELECT ROWNUM AS rnum, A.*                                 
+	  		FROM                                                       
+	  		(                                                           
+	  			SELECT  *                                              
+	  			FROM   users    
+	  			WHERE  1=1                          
+	  			AND reg_dt <![CDATA[ >  ]]> to_date('19700101','yyyymmdd')
+	  			<include refid="baseCondition"/>                                        
+	  			ORDER BY reg_dt DESC                                   
+	  		)A                                                         
+	  	   WHERE rownum <![CDATA[ <= ]]> (#{pageSize} * (#{pageNum}-1)+#{pageSize})    						       
+	  	) B                                                            
+	  	WHERE B.rnum <![CDATA[ >= ]]> (#{pageSize} * (#{pageNum}-1)+1)                  				   
+	  )T1
+	  NATURAL JOIN                                                      
+	  (                                                                 
+	      SELECT COUNT(*) totalCnt                                     
+	      FROM users       
+	      WHERE  1=1                                                
+	  	  <include refid="baseCondition"/>        		                               
+	  )T2  
+	</select>
+
+	<update id="do_update" parameterType="User">
+		UPDATE users
+		SET
+			name = #{name,jdbcType=VARCHAR}
+			,passwd = #{passwd,jdbcType=VARCHAR}
+			,h_level = #{level,jdbcType=NUMERIC}
+			,login = #{login,jdbcType=NUMERIC}
+			,recommend = #{recommend,jdbcType=NUMERIC}
+			,email = #{email,jdbcType=VARCHAR}
+			,reg_dt = sysdate
+		WHERE
+		u_id = #{u_id,jdbcType=VARCHAR}
+	</update>
+
+
+	<!-- 단건조회 -->
+	<select id="get_selectOne" parameterType="User"
+		resultType="User">
+		SELECT
+		<include refid="userColumns" />
+		FROM
+		users
+		WHERE u_id = #{u_id,jdbcType=VARCHAR}
+	</select>
+
+
+	<!-- 등록 -->
+	<insert id="do_save" parameterType="User">
+		INSERT INTO users (
+		u_id,
+		name,
+		passwd,
+		h_level,
+		login,
+		recommend,
+		email,
+		reg_dt
+		) VALUES (
+		#{u_id,jdbcType=VARCHAR},
+		#{name,jdbcType=VARCHAR},
+		#{passwd,jdbcType=VARCHAR},
+		#{level,jdbcType=NUMERIC},
+		#{login,jdbcType=NUMERIC},
+		#{recommend,jdbcType=NUMERIC},
+		#{email,jdbcType=VARCHAR},
+		SYSDATE
+		)
+	</insert>
+
+	<!-- 삭제 -->
+	<delete id="do_delete"
+		parameterType="kr.co.ehr.user.service.User">
+		DELETE FROM users WHERE u_id = #{u_id,jdbcType=VARCHAR}
+	</delete>
+</mapper>

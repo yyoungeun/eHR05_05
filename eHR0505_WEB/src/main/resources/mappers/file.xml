@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ehr.file">
+
+	<sql id="fileColumns">
+			    file_id as fileId,	
+		    	num,	
+		    	org_file_nm as orgFileNm,	
+		    	division,	
+		    	save_file_nm as saveFileNm,	
+		    	f_size as fSize,	
+		    	ext,	
+		    	reg_id as regId,	
+		    	TO_CHAR(reg_dt, 'yyyy/mm/dd HH24:MI:SS') as regDt
+	</sql>
+	
+	<!-- file_count -->
+	<select id="get_file_count" parameterType="File" resultType="int">
+			SELECT count(*) AS CNT
+			FROM FILE_MNG A
+			WHERE a.file_id = #{fileId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- get_fileIdOrgFileNmList -->
+	<select id="get_fileIdOrgFileNmList" parameterType="Search" resultType="File">
+		 	SELECT	
+                 <include refid="fileColumns" /> 
+			FROM	
+		   		file_mng	
+			WHERE ORG_FILE_NM LIKE '%' || #{searchWord} || '%'
+			ORDER BY ORG_FILE_NM ASC
+	</select>
+
+	<!-- FILE_ID기준 NUM증가 -->
+	<select id="num_max_plus_one" parameterType="File" resultType="int">
+			SELECT NVL(MAX(NUM),0)+1 AS CNT
+			FROM FILE_MNG A
+			WHERE a.file_id = #{fileId,jdbcType=VARCHAR}
+	</select>
+	
+	 <!-- FILE_ID기준: 삭제 -->
+	 <!-- 삭제 -->
+ 	 <delete id="do_delete_file_id" parameterType="File">
+ 	 	<![CDATA[
+ 	 		DELETE FROM file_mng 
+ 	 		WHERE file_id = #{fileId,jdbcType=VARCHAR}
+ 	 	]]>
+ 	 </delete>
+	
+ 	 <!-- FILE_ID기준 조회 -->
+ 	 <select id="get_fileIdList" parameterType="File" resultType="File">
+		 	SELECT	
+				<include refid="fileColumns" /> 
+			FROM	
+		   		file_mng	
+			WHERE file_id = #{fileId,jdbcType=VARCHAR}
+			ORDER BY num
+ 	 </select>
+
+ 	 <!-- 등록 -->
+ 	  <insert id="do_save" parameterType="File">
+ 	  
+			INSERT INTO file_mng (
+			    file_id,
+			    num,
+			    org_file_nm,
+			    division,
+			    save_file_nm,
+			    f_size,
+			    ext,
+			    reg_id,
+			    reg_dt
+			) VALUES (
+			    #{fileId,jdbcType=VARCHAR},
+			    #{num,jdbcType=NUMERIC},
+			    #{orgFileNnm,jdbcType=VARCHAR},
+			    #{division,jdbcType=VARCHAR},
+			    #{saveFileNm,jdbcType=VARCHAR},
+			    #{fSize,javaType=double},
+			    #{ext,jdbcType=VARCHAR},
+			    #{regId,jdbcType=VARCHAR},
+			    sysdate
+			)
+ 	  
+ 	  </insert>	
+	
+	 <!-- 삭제 -->
+ 	 <delete id="do_delete" parameterType="File">
+ 	 
+ 	 		DELETE FROM file_mng 
+ 	 		WHERE file_id = #{fileId,jdbcType=VARCHAR}
+ 	 		<if test='num gt 0'>
+ 	 			AND num = #{num,jdbcType=NUMERIC}
+ 	 		</if>
+ 	 </delete>
+
+</mapper>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="kr.co.ehr.board">
+ 	<!-- 
+ 		do_update :수정
+ 		do_delete :삭제
+ 		do_save :저장
+ 		get_selectOne :단건조회
+ 		get_retrieve :목록
+ 	 -->
+ 	 
+ 	 <sql id="boardColumns">
+			BOARD_ID as boardId,
+		    TITLE,
+		    READ_CNT as readCnt,
+		    CONTENTS,
+		    REG_ID as regId,
+		    TO_CHAR(REG_DT, 'yyyy/mm/dd HH24:MI:SS') as regDt
+ 	 
+ 	 </sql>
+ 	 
+ 	 <sql id="baseCondition">
+<!--  	 		아이디검색
+			if("10".equals(vo.getSearchDiv())) {
+				param.append(" AND WHERE u_id LIKE '%' || ? || '%' \n "); '%?%' 이런형태가 찾기는 좋지만 속도가 느려짐
+			}else if("20".equals(vo.getSearchDiv())) {
+				param.append(" AND WHERE name LIKE '%' || ? || '%' \n ");
+			}else if("30".equals(vo.getSearchDiv())) {
+				param.append(" AND WHERE email LIKE '%' || ? || '%' \n ");
+			} -->
+ 	 
+ 	 		<choose>
+ 	 			<when test="'10' == searchDiv">
+ 	 				 and TITLE LIKE '%' || #{searchWord} || '%'
+ 	 			</when>
+ 	 			<when test="'20' == searchDiv">
+ 	 				 and CONTENTS LIKE '%' || #{searchWord} || '%'
+ 	 			</when>
+ 	 		 	<when test="'30' == searchDiv">
+ 	 				 and REG_ID LIKE '%' || #{searchWord} || '%'
+ 	 			</when>
+ 	 			<otherwise></otherwise>
+ 	 		</choose>
+ 	 </sql>
+ 	 
+ 	 <!-- get_boardIdList -->
+ 	 <select id="get_boardIdList" parameterType="Search" resultType="Board">
+				 	 SELECT
+							<include refid="boardColumns" />
+					FROM
+				   			BOARD
+					WHERE TITLE LIKE '%' || #{searchWord} || '%'
+					ORDER BY TITLE ASC
+ 	 </select>
+ 	 
+ 	 <!-- 목록조회 -->
+ 	 <select id="get_retrieve" parameterType="Search" resultType="Board">
+ 	 	 SELECT T1.*,T2.*												
+				 FROM                                                          
+				 (                                                             
+				 	SELECT                                                     
+				 		B.BOARD_ID as boardId,                                                
+				 		B.TITLE,
+				 		B.READ_CNT as readCnt,                                             
+				 		B.CONTENTS, 
+				 		B.REG_ID as regId,                                               
+				 		CASE TO_CHAR(B.reg_dt, 'yyyy/mm/dd') when TO_CHAR(sysdate, 'yyyy/mm/dd') THEN TO_CHAR(sysdate, 'HH24:MI')
+				 		ELSE TO_CHAR(B.reg_dt, 'yyyy/mm/dd') END AS regDt,              
+				 		B.rnum as num                         
+				 	FROM                                                       
+				 	( 	SELECT ROWNUM AS rnum, A.*                             
+				 		FROM                                                   
+				 		(                                                      
+				 			SELECT  *                                          
+				 			FROM   BOARD
+				 			WHERE 1=1
+							AND REG_DT <![CDATA[ > ]]> to_date('19700101','yyyymmdd')
+							<!-- search condition -->
+							<include refid="baseCondition" /> 
+				 			ORDER BY reg_dt DESC                               
+				 		)A                                                     
+				 	   WHERE rownum <![CDATA[ <= ]]> (#{pageSize} * ( #{pageNum}-1)+ #{pageSize} )    						   
+				 	) B                                                        
+				 	WHERE B.rnum <![CDATA[ >= ]]> (#{pageSize} * (#{pageNum}-1)+1)                  				
+				 )T1                                                           
+				 NATURAL JOIN                                                  
+				 (                                                             
+				     SELECT COUNT(*) totalCnt                                 
+				     FROM BOARD 
+				     WHERE 1=1
+				     <include refid="baseCondition" />                                               
+				 )T2                                                           
+ 	 </select>
+ 	 
+ 	 <!-- ReadCount증가 -->
+ 	  <update id="do_updateReadCnt" parameterType="Board">
+			UPDATE BOARD
+			SET READ_CNT = (SELECT NVL(MAX(READ_CNT),0)+1 FROM BOARD WHERE  BOARD_ID = #{boardId,jdbcType=VARCHAR})
+			WHERE  BOARD_ID = #{boardId, jdbcType=VARCHAR}
+ 	 </update>
+ 	 
+ 	 <!-- 수정 -->
+ 	 <update id="do_update" parameterType="Board">
+			 UPDATE 	BOARD
+				SET  TITLE 		= #{title, jdbcType=VARCHAR}
+			   		 ,CONTENTS 	=  #{contents, jdbcType=VARCHAR}
+			    	 ,REG_ID 	=  #{regId, jdbcType=VARCHAR}
+			         ,REG_DT	= SYSDATE
+			WHERE  BOARD_ID 	= #{boardId,jdbcType=VARCHAR}
+ 	 </update>
+ 	 
+ 	 <!-- 단건조회 -->
+ 	 <select id="get_selectOne" parameterType="Board" resultType="Board">
+ 	 	 SELECT	
+ 	 	 	<include refid="boardColumns" />								
+		FROM                                         
+		    BOARD
+		WHERE BOARD_ID = #{boardId,jdbcType=VARCHAR}
+ 	 
+ 	 </select>
+ 	 
+ 	 <!-- 등록 -->
+ 	  <insert id="do_save" parameterType="Board">
+			INSERT INTO BOARD (
+				    TITLE,
+				    READ_CNT,
+				    CONTENTS,
+				    REG_ID,
+				    REG_DT
+				) VALUES (
+				    #{title,jdbcType=VARCHAR},
+				    0,
+				    #{contents,jdbcType=VARCHAR},
+				    #{regId,jdbcType=VARCHAR},
+				    SYSDATE
+				)
+ 	  </insert>
+ 	 
+ 	 <!-- 삭제 -->
+ 	 <delete id="do_delete" parameterType="Board">
+ 	 	<![CDATA[
+ 	 		DELETE FROM BOARD WHERE BOARD_ID = #{boardId,jdbcType=VARCHAR}
+ 	 	]]>
+ 	 </delete>
+ 	 
+ </mapper>
